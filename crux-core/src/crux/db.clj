@@ -25,12 +25,14 @@
 
 ;; tag::TxLog[]
 (defprotocol TxLog
-  (submit-doc [this content-hash doc])
   (submit-tx [this tx-ops])
   (new-tx-log-context ^java.io.Closeable [this])
   (tx-log [this tx-log-context from-tx-id])
   (latest-submitted-tx [this]))
 ;; end::TxLog[]
+
+(defprotocol RemoteDocumentStore
+  (submit-doc [this content-hash doc]))
 
 ;; NOTE: The snapshot parameter here is an optimisation to avoid keep
 ;; opening snapshots and allow caching of iterators. A non-KV backed
