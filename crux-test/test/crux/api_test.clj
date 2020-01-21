@@ -14,6 +14,7 @@
             [crux.rdf :as rdf]
             [crux.api :as api]
             [crux.fixtures.api :as fapi]
+            [crux.fixtures.doc-store :as ds]
             [crux.db :as db]
             [crux.query :as q])
   (:import crux.api.NodeOutOfSyncException
@@ -35,7 +36,11 @@
   (t/testing "Remote API"
     (fn [f]
       (fh/with-http-server
-        fs/with-standalone-node))))
+        fs/with-standalone-node)))
+  (t/testing "Kafka and Remote Doc Store"
+    (kf/with-cluster-node-opts
+      (fn []
+        (ds/with-remote-doc-store-opts f)))))
 
 (t/use-fixtures :once fk/with-embedded-kafka-cluster)
 (t/use-fixtures :each with-each-api-implementation kvf/with-kv-dir fapi/with-node)
@@ -216,7 +221,7 @@
         (t/testing "reflect evicted documents"
           (let [valid-time (Date.)
                 submitted-tx (.submitTx *api* [[:crux.tx/evict :ivan]])]
-            (t/is (.awaitTx *api* submitted-tx nil))
+            (t/is (.awaitTx *api* submitted-tx (java.time.Duration/ofSeconds 5)))
 
             ;; actual removal of the document happens asynchronously after
             ;; the transaction has been processed so waiting on the
