@@ -6,10 +6,10 @@
   (:import crux.api.ICruxAsyncIngestAPI
            java.io.Closeable))
 
-(defrecord CruxKafkaIngestClient [tx-log remote-document-store close-fn]
+(defrecord CruxKafkaIngestClient [tx-log document-store close-fn]
   ICruxAsyncIngestAPI
   (submitTxAsync [_ tx-ops]
-    (db/submit-docs remote-document-store (tx/tx-ops->id-and-docs tx-ops))
+    (db/submit-docs document-store (tx/tx-ops->id-and-docs tx-ops))
     (db/submit-tx tx-log tx-ops))
 
   (submitTx [this tx-ops]
@@ -28,12 +28,12 @@
     (when close-fn (close-fn))))
 
 (def topology {:crux.node/tx-log k/tx-log
-               :crux.node/remote-document-store k/remote-document-store
+               :crux.node/document-store k/document-store
                :crux.kafka/admin-client k/admin-client
                :crux.kafka/admin-wrapper k/admin-wrapper
                :crux.kafka/producer k/producer
                :crux.kafka/latest-submitted-tx-consumer k/latest-submitted-tx-consumer})
 
 (defn new-ingest-client ^ICruxAsyncIngestAPI [options]
-  (let [[{:keys [crux.node/tx-log crux.node/remote-document-store]} close-fn] (n/start-modules topology options)]
-    (map->CruxKafkaIngestClient {:tx-log tx-log :remote-document-store remote-document-store :close-fn close-fn})))
+  (let [[{:keys [crux.node/tx-log crux.node/document-store]} close-fn] (n/start-modules topology options)]
+    (map->CruxKafkaIngestClient {:tx-log tx-log :document-store document-store :close-fn close-fn})))

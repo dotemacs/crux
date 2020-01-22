@@ -45,7 +45,7 @@
   (when @closed?
     (throw (IllegalStateException. "Crux node is closed"))))
 
-(defrecord CruxNode [kv-store tx-log remote-document-store indexer object-store bus
+(defrecord CruxNode [kv-store tx-log document-store indexer object-store bus
                      options close-fn status-fn closed? ^StampedLock lock]
   ICruxAPI
   (db [this]
@@ -106,7 +106,7 @@
   (submitTx [this tx-ops]
     (cio/with-read-lock lock
       (ensure-node-open this)
-      (db/submit-docs remote-document-store (tx/tx-ops->id-and-docs tx-ops))
+      (db/submit-docs document-store (tx/tx-ops->id-and-docs tx-ops))
       @(db/submit-tx tx-log tx-ops)))
 
   (hasTxCommitted [this {:keys [crux.tx/tx-id
@@ -167,7 +167,7 @@
   (submitTxAsync [this tx-ops]
     (cio/with-read-lock lock
       (ensure-node-open this)
-      (db/submit-docs remote-document-store (tx/tx-ops->id-and-docs tx-ops))
+      (db/submit-docs document-store (tx/tx-ops->id-and-docs tx-ops))
       (db/submit-tx tx-log tx-ops)))
 
   backup/INodeBackup
@@ -293,7 +293,7 @@
   (let [options (into {} options)
         topology (options->topology options)
         [modules close-fn] (start-modules topology options)
-        {::keys [kv-store tx-log remote-document-store bus indexer object-store]} modules
+        {::keys [kv-store tx-log document-store bus indexer object-store]} modules
         status-fn (fn [] (apply merge (map status/status-map (cons (crux-version) (vals modules)))))
         node-opts (parse-opts node-args options)]
     (map->CruxNode {:close-fn close-fn
@@ -301,7 +301,7 @@
                     :options node-opts
                     :kv-store kv-store
                     :tx-log tx-log
-                    :remote-document-store remote-document-store
+                    :document-store document-store
                     :indexer indexer
                     :object-store object-store
                     :bus bus
