@@ -107,13 +107,6 @@
            [k v])
          (into {})))
 
-  (known-keys? [this snapshot ks]
-    (let [keydir @keydir]
-      (->> (for [k ks]
-             (str (c/new-id k)))
-           (every? #(and (contains? keydir %)
-                         (not (get-in keydir [% :bitcask-kafka/deleted?])))))))
-
   (put-objects [this kvs]
     (let [{:keys [data-topic hint-topic]} options
           k+deleted?+mds (->> (for [[k v] kvs
@@ -157,15 +150,11 @@
   @(:keydir os)
   ;;=> {key-hash hint}
 
-  (db/known-keys? os nil [:bar])
-  ;;=>  true
   (db/get-single-object os nil :bar)
   ;;=>  "foo"
 
   (db/delete-objects os [:bar])
   ;;=> nil
-  (db/known-keys? os nil [:bar])
-  ;;=>  false
 
   (db/get-single-object os nil :bar)
   ;;=> nil
